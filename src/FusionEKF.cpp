@@ -20,7 +20,7 @@ FusionEKF::FusionEKF() {
   R_laser_ = MatrixXd(2, 2);
   R_radar_ = MatrixXd(3, 3);
   H_laser_ = MatrixXd(2, 4);
-  Hj_ = MatrixXd(3, 4);
+  //Hj_ = MatrixXd(3, 4);
 
   //measurement covariance matrix - laser
   R_laser_ << 0.0225, 0,
@@ -79,10 +79,16 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.x_ << 1, 1, 1, 1;
 
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-      /**
-        TODO:
-      Convert radar from polar to cartesian coordinates and initialize state.
-      */
+      //Convert radar from polar to cartesian coordinates and initialize state.
+      float ro = measurement_pack.raw_measurements_(0);
+      float fi = measurement_pack.raw_measurements_(1);
+      float rdot = measurement_pack.raw_measurements_(2);
+
+      ekf_.x_(0) = ro * cos(fi);
+      ekf_.x_(1) = ro * sin(fi);
+      ekf_.x_(2) = rdot * cos(fi);
+      ekf_.x_(3) = rdot * sin(fi);
+
     } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       ekf_.x_(0) = measurement_pack.raw_measurements_(0);
       ekf_.x_(1) = measurement_pack.raw_measurements_(1);
