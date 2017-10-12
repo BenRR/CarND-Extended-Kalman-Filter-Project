@@ -28,6 +28,24 @@ void KalmanFilter::Predict() {
 
 void KalmanFilter::Update(const VectorXd &z) {
   VectorXd z_pred = H_ * x_;
+  UpdateCommon(z, z_pred, false);
+}
+
+void KalmanFilter::UpdateEKF(const VectorXd &z) {
+  float ro = sqrt(pow(x_(0), 2.0) + pow(x_(1), 2.0));
+  float fi = atan2(x_(1), x_(0));
+  float rdot;
+  if (fabs(ro) < 0.0001) {
+    rdot = 0;
+  } else {
+    rdot = (x_(0) * x_(2) + x_(1) * x_(3)) / ro;
+  }
+  VectorXd z_pred(3);
+  z_pred << ro, fi, rdot;
+  UpdateCommon(z, z_pred, true);
+}
+
+void KalmanFilter::UpdateCommon(const Eigen::VectorXd &z, const Eigen::VectorXd &z_pred, bool extended) {
   VectorXd y = z - z_pred;
   MatrixXd Ht = H_.transpose();
   MatrixXd S = H_ * P_ * Ht + R_;
@@ -35,16 +53,14 @@ void KalmanFilter::Update(const VectorXd &z) {
   MatrixXd PHt = P_ * Ht;
   MatrixXd K = PHt * Si;
 
+  if(extended){
+    // normalise angle for radar
+    y(1) = std::atan2(sin( y(1)), cos( y(1) ));
+  }
+
   //new estimate
   x_ = x_ + (K * y);
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
   P_ = (I - K * H_) * P_;
-}
-
-void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  /**
-  TODO:
-    * update the state by using Extended Kalman Filter equations
-  */
 }
